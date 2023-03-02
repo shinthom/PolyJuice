@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: MIT
 pragma solidity ^0.8.0;
 
 import "./PolyJuice.sol";
@@ -9,6 +10,7 @@ interface IChildERC721 {
     event Claimed(address indexed from, address indexed to, uint256 indexed tokenId, uint256 fee, uint256 claimedAt);
     event Repaid (address indexed from, address indexed to, uint256 indexed tokenId, uint256 fee, uint256 repaidAt);
 
+    function mint(uint256 tokenId) external;
     function lend(address to, uint256 tokenId, uint256 duration) external;
     function claim(bytes32 biddingHash) external;
     function repay(bytes32 biddingHash) external;
@@ -63,8 +65,8 @@ contract ChildERC721 is ERC721, IChildERC721 {
         // todo: originOwner == msg.sender?
         require(msg.sender == address(_polyJuice), "ChildERC721: invalid owner ");
 
-        uint256 expiration = block.timestamp + duration;
-        _expirations[tokenId] = expiration;
+        uint256 expiration_ = block.timestamp + duration;
+        _expirations[tokenId] = expiration_;
 
         _transfer(originOwner, to, tokenId); // NOTE: It doesn't need to be safeTransfer. Forced transfer is possible through claim.
         emit Lent(originOwner, to, tokenId, duration);

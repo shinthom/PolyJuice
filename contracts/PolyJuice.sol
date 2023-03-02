@@ -1,9 +1,14 @@
+// SPDX-License-Identifier: MIT
 pragma solidity ^0.8.0;
 
 import "./ChildERC721.sol";
 import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import "@openzeppelin/contracts/token/ERC20/ERC20.sol";
 import "@openzeppelin/contracts/token/ERC721/IERC721.sol";
+
+import "hardhat/console.sol";
+
+// todo: add cancel logic
 
 interface IPolyJuice {
     event PairCreated(address indexed motherERC721, address indexed childERC721);
@@ -16,6 +21,10 @@ interface IPolyJuice {
         address erc20,
         uint256 amount,
         uint256 duration
+    );
+    event Settled(
+        bytes32 indexed id,
+        uint256 usagePeriod
     );
 
     struct Pair {
@@ -31,7 +40,7 @@ interface IPolyJuice {
         uint256 amount;
         uint256 duration;
         uint256 expiration;
-        uint256 periodOfUsage;
+        uint256 usagePeriod;
         bool isSettled;
     }
 
@@ -64,9 +73,9 @@ contract PolyJuice is IPolyJuice {
                 "PolyJuice: zero address"
         );
 
-        bytes32 key = keccak256(abi.encodePacked(motherERC721, childERC721));
-        if (_pairs[key].motherERC721 == address(0)) {
-            _pairs[key] = Pair(motherERC721, childERC721);
+        bytes32 key_ = keccak256(abi.encodePacked(motherERC721, childERC721));
+        if (_pairs[key_].motherERC721 == address(0)) {
+            _pairs[key_] = Pair(motherERC721, childERC721);
             emit PairCreated(motherERC721, childERC721);
         }
     }
@@ -103,7 +112,7 @@ contract PolyJuice is IPolyJuice {
                 signature
             ), "PolyJuice: invalid signature");
 
-            bytes32 id = keccak256(abi.encodePacked(
+            bytes32 id_ = keccak256(abi.encodePacked(
                 msg.sender,
                 borrower,
                 erc721,
@@ -112,10 +121,10 @@ contract PolyJuice is IPolyJuice {
                 amount,
                 duration
             ));
-            _biddings[id] = Bidding(
+            _biddings[id_] = Bidding(
                 msg.sender, borrower, erc721, tokenId, erc20, amount, duration, block.timestamp + duration, 0, false
             );
-            emit Fulfilled(id, msg.sender, borrower, erc721, tokenId, erc20, amount, duration);
+            emit Fulfilled(id_, msg.sender, borrower, erc721, tokenId, erc20, amount, duration);
 
             require(IERC20(erc20).transferFrom(borrower, address(this), amount));
             IChildERC721(erc721).lend(borrower, tokenId, duration);
@@ -140,7 +149,7 @@ contract PolyJuice is IPolyJuice {
                 signature
             ), "PolyJuice: invalid signature");
 
-            bytes32 id = keccak256(abi.encodePacked(
+            bytes32 id_ = keccak256(abi.encodePacked(
                 lender,
                 msg.sender,
                 erc721,
@@ -149,12 +158,10 @@ contract PolyJuice is IPolyJuice {
                 amount,
                 duration
             ));
-            _biddings[id] = Bidding(
+            _biddings[id_] = Bidding(
                 lender, msg.sender, erc721, tokenId, erc20, amount, duration, block.timestamp + duration, 0, false
             );
-            emit Fulfilled(id, lender, msg.sender, erc721, tokenId, erc20, amount, duration);
-
-            // todo: add cancel logic
+            emit Fulfilled(id_, lender, msg.sender, erc721, tokenId, erc20, amount, duration);
 
             require(IERC20(erc20).transferFrom(msg.sender, address(this), amount));
             IChildERC721(erc721).lend(msg.sender, tokenId, duration);
@@ -164,28 +171,24 @@ contract PolyJuice is IPolyJuice {
         }
     }
 
-    function settle(bytes32 biddleHash) public returns (uint256) {
-        Bidding storage bidding = _biddings[biddleHash];
+    function settle(bytes32 id_) public returns (uint256) {
+        Bidding storage bidding = _biddings[id_];
         require(msg.sender == bidding.erc721, "PolyJuice: invalid msg.sender");
 
-        uint256 expiration = bidding.expiration;
-        uint256 periodOfUsage = expiration >= block.timestamp ? expiration : block.timestamp - expiration;
+        uint256 usagePeriod_ = usagePeriod(id_);
+        bidding.usagePeriod = usagePeriod_;
 
-        bidding.periodOfUsage = periodOfUsage;
         bidding.isSettled = true;
+        emit Settled(id_, usagePeriod_);
 
-        uint256 fee = _calculateFee(periodOfUsage);
-        require(IERC20(bidding.erc20).transfer(bidding.lender, fee));
+        uint256 fee_ = _calculateFee(usagePeriod_, bidding.duration, bidding.amount);
+        require(IERC20(bidding.erc20).transfer(bidding.lender, fee_));
 
-        return fee;
+        return fee_;
     }
 
-    function _calculateFee(uint256 periodOfUsage) internal returns (uint256) {
-        return 200;
-
-        // todo: calc fee
-        // if (expiration <= block.timestamp) return expiration;
-        // return block.timestamp - expiration;
+    function _calculateFee(uint256 usagePeriod_, uint256 duration, uint256 amount) private pure returns (uint256) {
+        return usagePeriod_ == duration ? amount : usagePeriod_ * amount / duration;
     }
 
     function _verifySignature(
@@ -268,11 +271,29 @@ contract PolyJuice is IPolyJuice {
         ));
     }
 
-    function pair(bytes32 key) public view returns (Pair memory) {
-        return _pairs[key];
+    function pair(bytes32 key_) public view returns (Pair memory) {
+        return _pairs[key_];
     }
 
-    function biddings(bytes32 biddingHash) public view returns (Bidding memory) {
-        return _biddings[biddingHash];
+    function biddings(bytes32 id_) public view returns (Bidding memory) {
+        return _biddings[id_];
+    }
+
+    function usagePeriod(bytes32 id_) public view returns (uint256) {
+        Bidding memory bidding = _biddings[id_];
+        uint256 expiration = bidding.expiration;
+        uint256 duration = bidding.duration;
+
+        uint256 fulfilledAt = expiration - duration;
+        uint256 usagePeriod_ = block.timestamp - fulfilledAt;
+
+        return usagePeriod_ >= duration ? duration : usagePeriod_;
+    }
+
+    function fee(bytes32 id_) public view returns (uint256) {
+        Bidding memory bidding = _biddings[id_];
+        uint256 usagePeriod_ = usagePeriod(id_);
+
+        return _calculateFee(usagePeriod_, bidding.duration, bidding.amount);
     }
 }
