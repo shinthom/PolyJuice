@@ -169,7 +169,7 @@ contract PolyJuice is IPolyJuice {
         require(msg.sender == bidding.erc721, "PolyJuice: invalid msg.sender");
 
         uint256 expiration = bidding.expiration;
-        uint256 periodOfUsage = expiration <= block.timestamp ? expiration : block.timestamp - expiration;
+        uint256 periodOfUsage = expiration >= block.timestamp ? expiration : block.timestamp - expiration;
 
         bidding.periodOfUsage = periodOfUsage;
         bidding.isSettled = true;
