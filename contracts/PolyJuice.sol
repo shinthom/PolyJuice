@@ -77,33 +77,53 @@ contract PolyJuice is IPolyJuice {
             require(borrower != address(0), "PolyJuice: borrower is the zero address");
             require(biddingExpiration >= block.timestamp, "PolyJuice: bidding expired");
             require(msg.sender == IERC721(erc721).ownerOf(tokenId), "PolyJuice: not borrower's token");
-            // require(_verifySignature(), "PolyJuice: invalid signature");
 
             uint256 expiration = block.timestamp + duration;
-            bytes32 biddingHash = keccak256(abi.encodePacked(msg.sender, borrower, erc721, tokenId, erc20, amount, duration, expiration, uint256(0), false));
+            bytes32 biddingHash = keccak256(abi.encodePacked(
+                address(0),
+                borrower,
+                erc721,
+                tokenId,
+                erc20,
+                amount,
+                listingExpiration,
+                biddingExpiration,
+                duration
+            ));
+            require(_verifySignature(borrower, biddingHash, signature), "PolyJuice: invalid signature");
+
             _biddings[biddingHash] = Bidding(
                 msg.sender, borrower, erc721, tokenId, erc20, amount, duration, expiration, 0, false
             );
 
             require(IERC20(erc20).transferFrom(borrower, address(this), amount));
-            // IChildERC721(erc721).lend(biddingHash, borrower, tokenId, duration);
+            IChildERC721(erc721).lend(borrower, tokenId, duration);
 
         } else if (borrower == address(0) && biddingExpiration == 0) {
             require(lender != address(0), "PolyJuice: lender is the zero address");
             require(listingExpiration >= block.timestamp, "PolyJuice: listing expired");
             require(lender == IERC721(erc721).ownerOf(tokenId), "PolyJuice: not lender's token");
-            // require(_verifySignature(), "PolyJuice: invalid signature");
 
             uint256 expiration = block.timestamp + duration;
-            bytes32 biddingHash = keccak256(abi.encodePacked(lender, msg.sender, erc721, tokenId, erc20, amount, duration, expiration, uint256(0), false));
-            require(_biddings[biddingHash].isSettled, "PolyJuice: bidding is already settled");
+            bytes32 biddingHash = keccak256(abi.encodePacked(
+                lender,
+                address(0),
+                erc721,
+                tokenId,
+                erc20,
+                amount,
+                listingExpiration,
+                biddingExpiration,
+                duration
+            ));
+            require(_verifySignature(lender, biddingHash, signature), "PolyJuice: invalid signature");
 
             _biddings[biddingHash] = Bidding(
                 lender, msg.sender, erc721, tokenId, erc20, amount, duration, expiration, 0, false
             );
 
             require(IERC20(erc20).transferFrom(msg.sender, address(this), amount));
-            // IChildERC721(erc721).lend(biddingHash, borrower, tokenId, duration);
+            IChildERC721(erc721).lend(msg.sender, tokenId, duration);
 
         } else {
             revert("PolyJuice: invalid parameters");
@@ -112,6 +132,8 @@ contract PolyJuice is IPolyJuice {
 
     function settle(bytes32 biddleHash) public returns (uint256) {
         Bidding storage bidding = _biddings[biddleHash];
+        require(msg.sender == bidding.erc721, "PolyJuice: invalid msg.sender");
+
         uint256 expiration = bidding.expiration;
         uint256 periodOfUsage = expiration <= block.timestamp ? expiration : block.timestamp - expiration;
 
@@ -132,8 +154,70 @@ contract PolyJuice is IPolyJuice {
         // return block.timestamp - expiration;
     }
 
-    function pair(bytes32 biddingHash) public view returns (Pair memory) {
-        return _pairs[biddingHash];
+    function _verifySignature(
+        address signer,
+        bytes32 messageHash,
+        bytes memory signature
+    ) internal pure returns (bool) {
+        bytes memory prefix = "\x19Ethereum Signed Message:\n32";
+        bytes32 prefixedMessageHash = keccak256(abi.encodePacked(prefix, messageHash));
+
+        return _recoverSigner(prefixedMessageHash, signature) == signer;
+    }
+
+    function _recoverSigner(
+        bytes32 messageHash,
+        bytes memory signature
+    ) internal pure returns (address) {
+        (bytes32 r, bytes32 s, uint8 v) = _splitSignature(signature);
+
+        return ecrecover(messageHash, v, r, s);
+    }
+
+    function _splitSignature(
+        bytes memory sig
+    ) internal pure returns (bytes32 r, bytes32 s, uint8 v) {
+        require(sig.length == 65, "invalid signature length");
+
+        assembly {
+            r := mload(add(sig, 32))
+            s := mload(add(sig, 64))
+            v := byte(0, mload(add(sig, 96)))
+        }
+    }
+
+    function key(address motherERC721, address childERC721) public pure returns (bytes32) {
+        return keccak256(abi.encodePacked(motherERC721, childERC721));
+    }
+
+    function biddingHash(
+        address lender,
+        address borrower,
+        address erc721,
+        uint256 tokenId,
+        address erc20,
+        uint256 amount,
+        uint256 listingExpiration,
+        uint256 biddingExpiration,
+        uint256 duration,
+        bytes calldata signature
+    ) public pure returns (bytes32) {
+        return keccak256(abi.encodePacked(
+            lender,
+            borrower,
+            erc721,
+            tokenId,
+            erc20,
+            amount,
+            listingExpiration,
+            biddingExpiration,
+            duration,
+            signature
+        ));
+    }
+
+    function pair(bytes32 key) public view returns (Pair memory) {
+        return _pairs[key];
     }
 
     function biddings(bytes32 biddingHash) public view returns (Bidding memory) {
