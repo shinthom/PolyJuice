@@ -175,7 +175,7 @@ contract PolyJuice is IPolyJuice {
         bidding.isSettled = true;
 
         uint256 fee = _calculateFee(periodOfUsage);
-        require(IERC20(bidding.erc20).transferFrom(address(this), bidding.lender, fee));
+        require(IERC20(bidding.erc20).transfer(bidding.lender, fee));
 
         return fee;
     }
