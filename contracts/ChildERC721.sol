@@ -70,27 +70,27 @@ contract ChildERC721 is ERC721, IChildERC721 {
         emit Lent(originOwner, to, tokenId, duration);
     }
 
-    function claim(bytes32 biddingHash) public override {
-        IPolyJuice.Bidding memory bidding = _polyJuice.biddings(biddingHash);
+    function claim(bytes32 id) public override {
+        IPolyJuice.Bidding memory bidding = _polyJuice.biddings(id);
         require(_expirations[bidding.tokenId] < block.timestamp, "ChildERC721: not expired");
 
         address originOwner = IERC721(_motherERC721).ownerOf(bidding.tokenId);
         require(msg.sender == originOwner, "ChildERC721: not origin owner");
 
-        uint256 fee = _polyJuice.settle(biddingHash);
+        uint256 fee = _polyJuice.settle(id);
 
         address owner = _ownerOf(bidding.tokenId);
         _transfer(owner, originOwner, bidding.tokenId); // NOTE: It doesn't need to be safeTransfer. Forced transfer is possible through claim.
         emit Claimed(originOwner, owner, bidding.tokenId, fee, block.timestamp);
     }
 
-    function repay(bytes32 biddingHash) public override {
-        IPolyJuice.Bidding memory bidding = _polyJuice.biddings(biddingHash);
+    function repay(bytes32 id) public override {
+        IPolyJuice.Bidding memory bidding = _polyJuice.biddings(id);
 
         address owner = ownerOf(bidding.tokenId);
         require(owner == bidding.borrower, "ChildERC721: not owner");
 
-        uint256 fee = _polyJuice.settle(biddingHash);
+        uint256 fee = _polyJuice.settle(id);
 
         address originOwner = IERC721(_motherERC721).ownerOf(bidding.tokenId);
         _transfer(owner, originOwner, bidding.tokenId); // NOTE: It doesn't need to be safeTransfer. Forced transfer is possible through claim.
