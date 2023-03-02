@@ -59,8 +59,31 @@ interface IPolyJuice {
     ) external;
     function settle(bytes32 biddleHash) external returns (uint256);
 
-    function pair(bytes32 biddingHash) external view returns (Pair memory);
-    function biddings(bytes32 biddingHash) external view returns (Bidding memory);
+    function key(address motherERC721, address childERC721) external view returns (bytes32);
+    function id(
+        address lender,
+        address borrower,
+        address erc721,
+        uint256 tokenId,
+        address erc20,
+        uint256 amount,
+        uint256 duration
+    ) external view returns (bytes32);
+    function biddingHash(
+        address lender,
+        address borrower,
+        address erc721,
+        uint256 tokenId,
+        address erc20,
+        uint256 amount,
+        uint256 listingExpiration,
+        uint256 biddingExpiration,
+        uint256 duration
+    ) external pure returns (bytes32);
+    function pair(bytes32 id_) external view returns (Pair memory);
+    function biddings(bytes32 id_) external view returns (Bidding memory);
+    function usagePeriod(bytes32 id_) external view returns (uint256);
+    function fee(bytes32 id_) external view returns (uint256);
 }
 
 contract PolyJuice is IPolyJuice {
