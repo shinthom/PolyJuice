@@ -60,6 +60,7 @@ contract ChildERC721 is ERC721, IChildERC721 {
 
     function lend(address to, uint256 tokenId, uint256 duration) public override {
         address originOwner = IERC721(_motherERC721).ownerOf(tokenId);
+        // todo: originOwner == msg.sender?
         require(msg.sender == address(_polyJuice), "ChildERC721: invalid owner ");
 
         uint256 expiration = block.timestamp + duration;

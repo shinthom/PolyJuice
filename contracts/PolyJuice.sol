@@ -122,6 +122,8 @@ contract PolyJuice is IPolyJuice {
                 lender, msg.sender, erc721, tokenId, erc20, amount, duration, expiration, 0, false
             );
 
+            // todo: add cancel logic
+
             require(IERC20(erc20).transferFrom(msg.sender, address(this), amount));
             IChildERC721(erc721).lend(msg.sender, tokenId, duration);
 
