@@ -75,7 +75,7 @@ contract PolyJuice is IPolyJuice {
     ) public {
         if (lender == address(0) && listingExpiration == 0) {
             require(borrower != address(0), "PolyJuice: borrower is the zero address");
-            require(biddingExpiration <= block.timestamp, "PolyJuice: bidding expired");
+            require(biddingExpiration >= block.timestamp, "PolyJuice: bidding expired");
             require(msg.sender == IERC721(erc721).ownerOf(tokenId), "PolyJuice: not borrower's token");
             // require(_verifySignature(), "PolyJuice: invalid signature");
 
@@ -90,7 +90,7 @@ contract PolyJuice is IPolyJuice {
 
         } else if (borrower == address(0) && biddingExpiration == 0) {
             require(lender != address(0), "PolyJuice: lender is the zero address");
-            require(listingExpiration <= block.timestamp, "PolyJuice: listing expired");
+            require(listingExpiration >= block.timestamp, "PolyJuice: listing expired");
             require(lender == IERC721(erc721).ownerOf(tokenId), "PolyJuice: not lender's token");
             // require(_verifySignature(), "PolyJuice: invalid signature");
 
