@@ -7,6 +7,16 @@ import "@openzeppelin/contracts/token/ERC721/IERC721.sol";
 
 interface IPolyJuice {
     event PairCreated(address indexed motherERC721, address indexed childERC721);
+    event Fulfilled(
+        bytes32 indexed id,
+        address lender,
+        address borrower,
+        address erc721,
+        uint256 tokenId,
+        address erc20,
+        uint256 amount,
+        uint256 duration
+    );
 
     struct Pair {
         address motherERC721;
@@ -77,24 +87,35 @@ contract PolyJuice is IPolyJuice {
             require(borrower != address(0), "PolyJuice: borrower is the zero address");
             require(biddingExpiration >= block.timestamp, "PolyJuice: bidding expired");
             require(msg.sender == IERC721(erc721).ownerOf(tokenId), "PolyJuice: not borrower's token");
+            require(_verifySignature(
+                borrower,
+                biddingHash(
+                    lender,
+                    borrower,
+                    erc721,
+                    tokenId,
+                    erc20,
+                    amount,
+                    listingExpiration,
+                    biddingExpiration,
+                    duration
+                ),
+                signature
+            ), "PolyJuice: invalid signature");
 
-            uint256 expiration = block.timestamp + duration;
-            bytes32 biddingHash = keccak256(abi.encodePacked(
-                address(0),
+            bytes32 id = keccak256(abi.encodePacked(
+                msg.sender,
                 borrower,
                 erc721,
                 tokenId,
                 erc20,
                 amount,
-                listingExpiration,
-                biddingExpiration,
                 duration
             ));
-            require(_verifySignature(borrower, biddingHash, signature), "PolyJuice: invalid signature");
-
-            _biddings[biddingHash] = Bidding(
-                msg.sender, borrower, erc721, tokenId, erc20, amount, duration, expiration, 0, false
+            _biddings[id] = Bidding(
+                msg.sender, borrower, erc721, tokenId, erc20, amount, duration, block.timestamp + duration, 0, false
             );
+            emit Fulfilled(id, msg.sender, borrower, erc721, tokenId, erc20, amount, duration);
 
             require(IERC20(erc20).transferFrom(borrower, address(this), amount));
             IChildERC721(erc721).lend(borrower, tokenId, duration);
@@ -103,24 +124,35 @@ contract PolyJuice is IPolyJuice {
             require(lender != address(0), "PolyJuice: lender is the zero address");
             require(listingExpiration >= block.timestamp, "PolyJuice: listing expired");
             require(lender == IERC721(erc721).ownerOf(tokenId), "PolyJuice: not lender's token");
-
-            uint256 expiration = block.timestamp + duration;
-            bytes32 biddingHash = keccak256(abi.encodePacked(
+            require(_verifySignature(
                 lender,
-                address(0),
+                biddingHash(
+                    lender,
+                    borrower,
+                    erc721,
+                    tokenId,
+                    erc20,
+                    amount,
+                    listingExpiration,
+                    biddingExpiration,
+                    duration
+                ),
+                signature
+            ), "PolyJuice: invalid signature");
+
+            bytes32 id = keccak256(abi.encodePacked(
+                lender,
+                msg.sender,
                 erc721,
                 tokenId,
                 erc20,
                 amount,
-                listingExpiration,
-                biddingExpiration,
                 duration
             ));
-            require(_verifySignature(lender, biddingHash, signature), "PolyJuice: invalid signature");
-
-            _biddings[biddingHash] = Bidding(
-                lender, msg.sender, erc721, tokenId, erc20, amount, duration, expiration, 0, false
+            _biddings[id] = Bidding(
+                lender, msg.sender, erc721, tokenId, erc20, amount, duration, block.timestamp + duration, 0, false
             );
+            emit Fulfilled(id, lender, msg.sender, erc721, tokenId, erc20, amount, duration);
 
             // todo: add cancel logic
 
@@ -192,6 +224,26 @@ contract PolyJuice is IPolyJuice {
         return keccak256(abi.encodePacked(motherERC721, childERC721));
     }
 
+    function id(
+        address lender,
+        address borrower,
+        address erc721,
+        uint256 tokenId,
+        address erc20,
+        uint256 amount,
+        uint256 duration
+    ) public pure returns (bytes32) {
+        return keccak256(abi.encodePacked(
+            lender,
+            borrower,
+            erc721,
+            tokenId,
+            erc20,
+            amount,
+            duration
+        ));
+    }
+
     function biddingHash(
         address lender,
         address borrower,
@@ -201,8 +253,7 @@ contract PolyJuice is IPolyJuice {
         uint256 amount,
         uint256 listingExpiration,
         uint256 biddingExpiration,
-        uint256 duration,
-        bytes calldata signature
+        uint256 duration
     ) public pure returns (bytes32) {
         return keccak256(abi.encodePacked(
             lender,
@@ -213,8 +264,7 @@ contract PolyJuice is IPolyJuice {
             amount,
             listingExpiration,
             biddingExpiration,
-            duration,
-            signature
+            duration
         ));
     }
 
