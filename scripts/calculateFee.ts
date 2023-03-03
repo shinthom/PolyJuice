@@ -20,6 +20,7 @@ const deployContracts = async () => {
     "ChildERC721",
     "cERC721",
     motherERC721.address,
+    "",
     polyJuice.address
   );
   await childERC721.deployed();

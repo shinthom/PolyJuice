@@ -16,6 +16,7 @@ interface IChildERC721 {
     function repay(bytes32 biddingHash) external;
 
     function motherERC721() external view returns (address);
+    function platform() external view returns (string memory);
     function expiration(uint256 tokenId) external view returns (uint256);
 }
 
@@ -24,15 +25,18 @@ contract ChildERC721 is ERC721, IChildERC721 {
     mapping(uint256 => uint256) private _expirations; // tokenId => expiration
 
     IPolyJuice private _polyJuice;
+    string private _platform; // todo: manage platforms
 
     constructor(
         string memory name_,
         string memory symbol_,
         address motherERC721_,
+        string memory platform_,
         address polyJuice_
     ) ERC721(name_, symbol_) {
         require(motherERC721_ != address(0), "ChildERC721: origin is the zero address");
         _motherERC721 = motherERC721_;
+        _platform = platform_;
 
         require(polyJuice_ != address(0), "ChildERC721: polyJuice is the zero address");
         _polyJuice = IPolyJuice(polyJuice_);
@@ -101,6 +105,10 @@ contract ChildERC721 is ERC721, IChildERC721 {
 
     function motherERC721() public view override returns (address) {
         return address(_motherERC721);
+    }
+
+    function platform() public view override returns (string memory) {
+        return _platform;
     }
 
     function expiration(uint256 tokenId) public view override returns (uint256) {
