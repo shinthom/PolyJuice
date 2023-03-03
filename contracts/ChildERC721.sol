@@ -30,16 +30,17 @@ contract ChildERC721 is ERC721, IChildERC721 {
     constructor(
         string memory name_,
         string memory symbol_,
-        address motherERC721_,
         string memory platform_,
+        address motherERC721_,
         address polyJuice_
     ) ERC721(name_, symbol_) {
         require(motherERC721_ != address(0), "ChildERC721: origin is the zero address");
-        _motherERC721 = motherERC721_;
-        _platform = platform_;
-
         require(polyJuice_ != address(0), "ChildERC721: polyJuice is the zero address");
+
+        _platform = platform_;
+        _motherERC721 = motherERC721_;
         _polyJuice = IPolyJuice(polyJuice_);
+
         _polyJuice.createPair(motherERC721_, address(this));
     }
 
@@ -59,7 +60,7 @@ contract ChildERC721 is ERC721, IChildERC721 {
         revert("We do not allow transfer of ownership.");
     }
 
-    function mint(uint256 tokenId) public {
+    function mint(uint256 tokenId) public virtual {
         address originOwner = IERC721(_motherERC721).ownerOf(tokenId);
         _safeMint(originOwner, tokenId);
     }
