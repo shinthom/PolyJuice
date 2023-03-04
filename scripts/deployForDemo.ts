@@ -176,7 +176,10 @@ const deployContractsAndSetupForDemo = async (admin: any) => {
     bayc.address,
     BAYCs.address,
     BAYCd.address,
-    BAYCx.address
+    BAYCx.address,
+    {
+      value: ethers.utils.parseEther("100"),
+    }
   );
   await faucet.deployed();
   console.log("deployed Faucet contract at", faucet.address);
@@ -187,11 +190,17 @@ const deployContractsAndSetupForDemo = async (admin: any) => {
 
   await usdc.approve(faucet.address, ethers.constants.MaxUint256);
   console.log(
-    `- approve(usdc): faucet(${faucet.address}), amount: ${ethers.constants.MaxUint256}`
+    `- transfer(ETH): faucet(${
+      faucet.address
+    }), amount: ${await ethers.provider.getBalance(faucet.address)}`
+  );
+
+  console.log(
+    `- approve(USDC): faucet(${faucet.address}), amount: ${ethers.constants.MaxUint256}`
   );
 
   await bayc.setApprovalForAll(faucet.address, true);
-  console.log(`- setApprovalForAll(bayc): faucet(${faucet.address})`);
+  console.log(`- setApprovalForAll(BAYC): faucet(${faucet.address})`);
 
   await BAYCs.setApprovalForAll(faucet.address, true);
   console.log(`- setApprovalForAll(BAYCs): faucet(${faucet.address})`);
@@ -217,8 +226,8 @@ async function main() {
   const { polyJuice, bayc, BAYCx, BAYCs, BAYCd, usdc, faucet } =
     await deployContractsAndSetupForDemo(admin);
 
-  const isInitialized = true;
-  if (!isInitialized) {
+  const isDatabaseInitializedForNFTs = true;
+  if (!isDatabaseInitializedForNFTs) {
     console.log(
       "\nstarting calling apis to add childs to database ⬇️\n===================================================================================================================================="
     );
