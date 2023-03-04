@@ -217,57 +217,8 @@ async function main() {
   const { polyJuice, bayc, BAYCx, BAYCs, BAYCd, usdc, faucet } =
     await deployContractsAndSetupForDemo(admin);
 
-  const isInitialized = true;
-  if (!isInitialized) {
-    console.log(
-      "\nstarting calling apis to add childs to database ⬇️\n===================================================================================================================================="
-    );
-    console.log(
-      (
-        await createChild(
-          {
-            platform: "sandbox",
-            motherERC721: bayc.address,
-            motherERC721Name: "bayc",
-            childERC721: BAYCs.address,
-            name: "Bored Ape Yacht Club at Sandbox",
-            symbol: "BAYCs",
-          },
-          100
-        )
-      ).data.message
-    );
-    console.log(
-      (
-        await createChild(
-          {
-            platform: "decentraland",
-            motherERC721: bayc.address,
-            motherERC721Name: "bayc",
-            childERC721: BAYCd.address,
-            name: "Bored Ape Yacht Club at Decentraland",
-            symbol: "BAYCd",
-          },
-          100
-        )
-      ).data.message
-    );
-    console.log(
-      (
-        await createChild(
-          {
-            platform: "xociety",
-            motherERC721: bayc.address,
-            motherERC721Name: "bayc",
-            childERC721: BAYCx.address,
-            name: "Bored Ape Yacht Club at Xociety",
-            symbol: "BAYCx",
-          },
-          100
-        )
-      ).data.message
-    );
-  }
+  // We assume that the database already has NFT information.
+  // To save nft information to the database, run the `deployForDemo` script.
 }
 
 main().catch((error) => {
