@@ -21,7 +21,8 @@ interface IPolyJuice {
         uint256 tokenId,
         address erc20,
         uint256 amount,
-        uint256 duration
+        uint256 duration,
+        uint256 expiredAt
     );
     event Settled(
         bytes32 indexed id,
@@ -40,7 +41,7 @@ interface IPolyJuice {
         address erc20;
         uint256 amount;
         uint256 duration;
-        uint256 expiration;
+        uint256 expiredAt;
         uint256 usagePeriod;
         bool isSettled;
     }
@@ -148,7 +149,7 @@ contract PolyJuice is IPolyJuice {
             _biddings[id_] = Bidding(
                 msg.sender, borrower, erc721, tokenId, erc20, amount, duration, block.timestamp + duration, 0, false
             );
-            emit Fulfilled(id_, msg.sender, borrower, erc721, tokenId, erc20, amount, duration);
+            emit Fulfilled(id_, msg.sender, borrower, erc721, tokenId, erc20, amount, duration, block.timestamp + duration);
 
             require(IERC20(erc20).transferFrom(borrower, address(this), amount));
             IChildERC721(erc721).lend(borrower, tokenId, duration);
@@ -185,7 +186,7 @@ contract PolyJuice is IPolyJuice {
             _biddings[id_] = Bidding(
                 lender, msg.sender, erc721, tokenId, erc20, amount, duration, block.timestamp + duration, 0, false
             );
-            emit Fulfilled(id_, lender, msg.sender, erc721, tokenId, erc20, amount, duration);
+            emit Fulfilled(id_, lender, msg.sender, erc721, tokenId, erc20, amount, duration, block.timestamp + duration);
 
             require(IERC20(erc20).transferFrom(msg.sender, address(this), amount));
             IChildERC721(erc721).lend(msg.sender, tokenId, duration);
@@ -305,7 +306,7 @@ contract PolyJuice is IPolyJuice {
 
     function usagePeriod(bytes32 id_) public view returns (uint256) {
         Bidding memory bidding = _biddings[id_];
-        uint256 expiration = bidding.expiration;
+        uint256 expiration = bidding.expiredAt;
         uint256 duration = bidding.duration;
 
         uint256 fulfilledAt = expiration - duration;

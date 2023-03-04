@@ -26,8 +26,7 @@ const api = () => {
     motherERC721: string;
     motherERC721Name: string;
     childERC721: string;
-    name: string;
-    symbol: string;
+    childERC721Name: string;
   }
 
   const getBidding = async (id: string) => {
@@ -235,12 +234,11 @@ async function main() {
       (
         await createChild(
           {
-            platform: "sandbox",
+            platform: "Sandbox",
             motherERC721: bayc.address,
-            motherERC721Name: "bayc",
+            motherERC721Name: "BAYC",
             childERC721: BAYCs.address,
-            name: "Bored Ape Yacht Club at Sandbox",
-            symbol: "BAYCs",
+            childERC721Name: "BAYCs",
           },
           100
         )
@@ -250,12 +248,11 @@ async function main() {
       (
         await createChild(
           {
-            platform: "decentraland",
+            platform: "Decentraland",
             motherERC721: bayc.address,
-            motherERC721Name: "bayc",
+            motherERC721Name: "BAYC",
             childERC721: BAYCd.address,
-            name: "Bored Ape Yacht Club at Decentraland",
-            symbol: "BAYCd",
+            childERC721Name: "BAYCd",
           },
           100
         )
@@ -265,12 +262,11 @@ async function main() {
       (
         await createChild(
           {
-            platform: "xociety",
+            platform: "Xociety",
             motherERC721: bayc.address,
-            motherERC721Name: "bayc",
+            motherERC721Name: "BAYC",
             childERC721: BAYCx.address,
-            name: "Bored Ape Yacht Club at Xociety",
-            symbol: "BAYCx",
+            childERC721Name: "BAYCx",
           },
           100
         )
