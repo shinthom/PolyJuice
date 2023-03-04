@@ -47,6 +47,8 @@ contract Faucet {
         _secondChildERC721.mint(_tokenId);
         _thirdChildERC721.mint(_tokenId);
 
+        _tokenId += 1;
+
         payable(to).transfer(ethAmount);
         _usdc.transferFrom(_admin, to, usdcAmount);
     }
