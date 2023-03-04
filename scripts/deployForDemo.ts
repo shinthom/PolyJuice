@@ -82,7 +82,7 @@ const deployContractsAndSetupForDemo = async (admin: any) => {
     motherERC721: any,
     polyJuice: any
   ) => {
-    const ChildERC721 = await ethers.getContractFactory("DemoChildERC721");
+    const ChildERC721 = await ethers.getContractFactory("ChildERC721");
     const childERC721 = await ChildERC721.deploy(
       name,
       symbol,
@@ -105,7 +105,7 @@ const deployContractsAndSetupForDemo = async (admin: any) => {
   console.log(
     "\nstarting MotherERC721 deployment⬇️\n===================================================================================================================================="
   );
-  const BAYC = await ethers.getContractFactory("DemoMotherERC721");
+  const BAYC = await ethers.getContractFactory("MotherERC721");
   const bayc = await BAYC.deploy("MotherERC721", "mERC721");
   await bayc.deployed();
 
@@ -161,7 +161,7 @@ const deployContractsAndSetupForDemo = async (admin: any) => {
   console.log(
     "\nstarting ERC20(USDC) deployment ⬇️\n===================================================================================================================================="
   );
-  const USDC = await ethers.getContractFactory("DemoUSDC");
+  const USDC = await ethers.getContractFactory("USDC");
   const usdc = await USDC.deploy("USD Coin", "USDC");
   await usdc.deployed();
   console.log("deployed USDC contract at", usdc.address);
