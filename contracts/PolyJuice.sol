@@ -9,6 +9,7 @@ import "@openzeppelin/contracts/token/ERC721/IERC721.sol";
 import "hardhat/console.sol";
 
 // todo: add cancel logic
+// todo: check if the bidding is already settled
 
 interface IPolyJuice {
     event PairCreated(address indexed motherERC721, address indexed childERC721);
