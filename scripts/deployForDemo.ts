@@ -4,7 +4,7 @@ import { time } from "@nomicfoundation/hardhat-network-helpers";
 const hre = require("hardhat");
 
 const instance = axios.create({
-  baseURL: "http://127.0.0.1:3000/",
+  baseURL: "http://43.201.71.58:3000/",
 });
 
 const api = () => {
@@ -177,7 +177,7 @@ const deployContractsAndSetupForDemo = async (admin: any) => {
     BAYCd.address,
     BAYCx.address,
     {
-      value: ethers.utils.parseEther("100"),
+      value: ethers.utils.parseEther("10"),
     }
   );
   await faucet.deployed();
@@ -225,7 +225,7 @@ async function main() {
   const { polyJuice, bayc, BAYCx, BAYCs, BAYCd, usdc, faucet } =
     await deployContractsAndSetupForDemo(admin);
 
-  const isDatabaseInitializedForNFTs = true;
+  const isDatabaseInitializedForNFTs = false;
   if (!isDatabaseInitializedForNFTs) {
     console.log(
       "\nstarting calling apis to add childs to database ⬇️\n===================================================================================================================================="
@@ -273,6 +273,48 @@ async function main() {
       ).data.message
     );
   }
+
+  const lender = "0x70997970C51812dc3A010C7d01b50e0d17dc79C8";
+  console.log(
+    `\nstarting faucet to borrower(${lender}) ⬇️\n====================================================================================================================================`
+  );
+  console.log(`before:
+- ETH: ${await ethers.provider.getBalance(lender)}
+- USDC: ${await usdc.balanceOf(lender)}
+- BAYC: ${await bayc.balanceOf(lender)}
+- BAYCs: ${await BAYCs.balanceOf(lender)}
+- BAYCd: ${await BAYCd.balanceOf(lender)}
+- BAYCx: ${await BAYCx.balanceOf(lender)}`);
+
+  await faucet.faucet(lender, ethers.utils.parseEther("0.1"), 10_000);
+  console.log(`\nafter:
+- ETH: ${await ethers.provider.getBalance(lender)}
+- USDC: ${await usdc.balanceOf(lender)}
+- BAYC: ${await bayc.balanceOf(lender)}
+- BAYCs: ${await BAYCs.balanceOf(lender)}
+- BAYCd: ${await BAYCd.balanceOf(lender)}
+- BAYCx: ${await BAYCx.balanceOf(lender)}`);
+
+  const borrower = "0x3C44CdDdB6a900fa2b585dd299e03d12FA4293BC";
+  console.log(
+    `\nstarting faucet to borrower(${borrower}) ⬇️\n====================================================================================================================================`
+  );
+  console.log(`before:
+- ETH: ${await ethers.provider.getBalance(borrower)}
+- USDC: ${await usdc.balanceOf(borrower)}
+- BAYC: ${await bayc.balanceOf(borrower)}
+- BAYCs: ${await BAYCs.balanceOf(borrower)}
+- BAYCd: ${await BAYCd.balanceOf(borrower)}
+- BAYCx: ${await BAYCx.balanceOf(borrower)}`);
+
+  await faucet.faucet(lender, ethers.utils.parseEther("0.1"), 10_000);
+  console.log(`\nafter:
+- ETH: ${await ethers.provider.getBalance(borrower)}
+- USDC: ${await usdc.balanceOf(borrower)}
+- BAYC: ${await bayc.balanceOf(borrower)}
+- BAYCs: ${await BAYCs.balanceOf(borrower)}
+- BAYCd: ${await BAYCd.balanceOf(borrower)}
+- BAYCx: ${await BAYCx.balanceOf(borrower)}`);
 }
 
 main().catch((error) => {
