@@ -8,9 +8,7 @@ const deployContracts = async () => {
   await polyJuice.deployed();
   console.log("deployed PolyJuice contract at", polyJuice.address);
 
-  const MotherERC721 = await ethers.getContractFactory(
-    "ERC721PresetMinterPauserAutoId"
-  );
+  const MotherERC721 = await ethers.getContractFactory("ERC721Enumerable");
   const motherERC721 = await MotherERC721.deploy("MotherERC721", "mERC721", "");
   await motherERC721.deployed();
   console.log("deployed MotherERC721 contract at", motherERC721.address);
