@@ -157,16 +157,10 @@ async function main() {
     console.log(
       `before:
   - erc20(PolyJuice): ${await contracts.erc20.balanceOf(polyJuice.address)}
-  - erc721(lender)  : ${await contracts.childERC721.balanceOf(
-    users.lender.address
-  )}
-  - erc721(borrower): ${await contracts.childERC721.balanceOf(
-    users.borrower.address
-  )}
-  - erc20(lender)   : ${await contracts.erc20.balanceOf(users.lender.address)}
-  - erc20(borrower) : ${await contracts.erc20.balanceOf(
-    users.borrower.address
-  )} \n`
+  - erc721(lender)  : ${await contracts.childERC721.balanceOf(lender.address)}
+  - erc721(borrower): ${await contracts.childERC721.balanceOf(borrower.address)}
+  - erc20(lender)   : ${await contracts.erc20.balanceOf(lender.address)}
+  - erc20(borrower) : ${await contracts.erc20.balanceOf(borrower.address)} \n`
     );
 
     await polyJuice
@@ -187,16 +181,10 @@ async function main() {
     console.log(
       `after:
   - erc20(PolyJuice): ${await contracts.erc20.balanceOf(polyJuice.address)}
-  - erc721(lender)  : ${await contracts.childERC721.balanceOf(
-    users.lender.address
-  )}
-  - erc721(borrower): ${await contracts.childERC721.balanceOf(
-    users.borrower.address
-  )}
-  - erc20(lender)   : ${await contracts.erc20.balanceOf(users.lender.address)}
-  - erc20(borrower) : ${await contracts.erc20.balanceOf(
-    users.borrower.address
-  )} \n`
+  - erc721(lender)  : ${await contracts.childERC721.balanceOf(lender.address)}
+  - erc721(borrower): ${await contracts.childERC721.balanceOf(borrower.address)}
+  - erc20(lender)   : ${await contracts.erc20.balanceOf(lender.address)}
+  - erc20(borrower) : ${await contracts.erc20.balanceOf(borrower.address)} \n`
     );
 
     const id = await polyJuice.id(
