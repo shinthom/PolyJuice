@@ -66,13 +66,12 @@ contract ChildERC721 is ERC721, IChildERC721 {
     }
 
     function lend(address to, uint256 tokenId, uint256 duration) public override {
-        address originOwner = IERC721(_motherERC721).ownerOf(tokenId);
-        // todo: originOwner == msg.sender?
-        require(msg.sender == address(_polyJuice), "ChildERC721: invalid owner ");
+        require(msg.sender == address(_polyJuice), "ChildERC721: invalid owner");
 
         uint256 expiration_ = block.timestamp + duration;
         _expirations[tokenId] = expiration_;
 
+        address originOwner = IERC721(_motherERC721).ownerOf(tokenId);
         _transfer(originOwner, to, tokenId); // NOTE: It doesn't need to be safeTransfer. Forced transfer is possible through claim.
         emit Lent(originOwner, to, tokenId, duration);
     }
