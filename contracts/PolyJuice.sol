@@ -209,6 +209,8 @@ contract PolyJuice is IPolyJuice {
         uint256 fee_ = _calculateFee(usagePeriod_, bidding.duration, bidding.amount);
         require(IERC20(bidding.erc20).transfer(bidding.lender, fee_));
 
+        if (fee_ != bidding.amount) require(IERC20(bidding.erc20).transfer(bidding.borrower, bidding.amount - fee_));
+
         return fee_;
     }
 
