@@ -41,7 +41,7 @@ contract ChildERC721 is ERC721, IChildERC721 {
         _motherERC721 = motherERC721_;
         _polyJuice = IPolyJuice(polyJuice_);
 
-        _polyJuice.createPair(motherERC721_, address(this));
+        _polyJuice.createPair(motherERC721_, address(this)); // TODO: emits event
     }
 
     function transferFrom(

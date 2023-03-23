@@ -20,13 +20,20 @@ interface IPolyJuice {
         address erc721,
         uint256 tokenId,
         address erc20,
-        uint256 amount,
+        uint256 amount, // NOTE: full amount
         uint256 duration,
         uint256 expiredAt
     );
     event Settled(
         bytes32 indexed id,
-        uint256 usagePeriod
+        address lender,
+        address borrower,
+        address erc721,
+        uint256 tokenId,
+        address erc20,
+        uint256 paidAmount, // NOTE: It couldn't be full amount
+        uint256 usagePeriod,
+        uint256 settledAt // return time
     );
 
     struct Pair {
