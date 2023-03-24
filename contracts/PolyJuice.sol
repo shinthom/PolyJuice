@@ -6,11 +6,6 @@ import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import "@openzeppelin/contracts/token/ERC20/ERC20.sol";
 import "@openzeppelin/contracts/token/ERC721/IERC721.sol";
 
-import "hardhat/console.sol";
-
-// todo: add cancel logic
-// todo: check if the bidding is already settled
-
 interface IPolyJuice {
     event PairCreated(address indexed motherERC721, address indexed childERC721);
     event Fulfilled(
@@ -209,11 +204,22 @@ contract PolyJuice is IPolyJuice {
 
         uint256 usagePeriod_ = usagePeriod(id_);
         bidding.usagePeriod = usagePeriod_;
-
         bidding.isSettled = true;
-        emit Settled(id_, usagePeriod_);
 
         uint256 fee_ = _calculateFee(usagePeriod_, bidding.duration, bidding.amount);
+
+        emit Settled(
+            id_,
+            bidding.lender,
+            bidding.borrower,
+            bidding.erc721,
+            bidding.tokenId,
+            bidding.erc20,
+            fee_,
+            usagePeriod_,
+            block.timestamp
+        );
+
         require(IERC20(bidding.erc20).transfer(bidding.lender, fee_));
 
         if (fee_ != bidding.amount) require(IERC20(bidding.erc20).transfer(bidding.borrower, bidding.amount - fee_));
