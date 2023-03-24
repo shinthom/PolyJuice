@@ -119,83 +119,50 @@ contract PolyJuice is IPolyJuice {
         uint256 duration,
         bytes calldata signature
     ) public {
+        bytes32 hash = biddingHash(
+            lender, borrower, erc721, tokenId, erc20, amount, listingExpiration, biddingExpiration, duration
+        );
+
         if (lender == address(0) && listingExpiration == 0) {
+            // A borrower posted an offer; the token owner (msg.sender) accepts it.
             require(borrower != address(0), "PolyJuice: borrower is the zero address");
             require(biddingExpiration >= block.timestamp, "PolyJuice: bidding expired");
             require(msg.sender == IERC721(erc721).ownerOf(tokenId), "PolyJuice: not borrower's token");
-            require(_verifySignature(
-                borrower,
-                biddingHash(
-                    lender,
-                    borrower,
-                    erc721,
-                    tokenId,
-                    erc20,
-                    amount,
-                    listingExpiration,
-                    biddingExpiration,
-                    duration
-                ),
-                signature
-            ), "PolyJuice: invalid signature");
+            require(_verifySignature(borrower, hash, signature), "PolyJuice: invalid signature");
 
-            bytes32 id_ = keccak256(abi.encodePacked(
-                msg.sender,
-                borrower,
-                erc721,
-                tokenId,
-                erc20,
-                amount,
-                duration
-            ));
-            _biddings[id_] = Bidding(
-                msg.sender, borrower, erc721, tokenId, erc20, amount, duration, block.timestamp + duration, 0, false
-            );
-            emit Fulfilled(id_, msg.sender, borrower, erc721, tokenId, erc20, amount, duration, block.timestamp + duration);
-
-            require(IERC20(erc20).transferFrom(borrower, address(this), amount));
-            IChildERC721(erc721).lend(borrower, tokenId, duration);
-
+            _openBidding(msg.sender, borrower, erc721, tokenId, erc20, amount, duration);
         } else if (borrower == address(0) && biddingExpiration == 0) {
+            // A lender listed the token; the renter (msg.sender) accepts it.
             require(lender != address(0), "PolyJuice: lender is the zero address");
             require(listingExpiration >= block.timestamp, "PolyJuice: listing expired");
             require(lender == IERC721(erc721).ownerOf(tokenId), "PolyJuice: not lender's token");
-            require(_verifySignature(
-                lender,
-                biddingHash(
-                    lender,
-                    borrower,
-                    erc721,
-                    tokenId,
-                    erc20,
-                    amount,
-                    listingExpiration,
-                    biddingExpiration,
-                    duration
-                ),
-                signature
-            ), "PolyJuice: invalid signature");
+            require(_verifySignature(lender, hash, signature), "PolyJuice: invalid signature");
 
-            bytes32 id_ = keccak256(abi.encodePacked(
-                lender,
-                msg.sender,
-                erc721,
-                tokenId,
-                erc20,
-                amount,
-                duration
-            ));
-            _biddings[id_] = Bidding(
-                lender, msg.sender, erc721, tokenId, erc20, amount, duration, block.timestamp + duration, 0, false
-            );
-            emit Fulfilled(id_, lender, msg.sender, erc721, tokenId, erc20, amount, duration, block.timestamp + duration);
-
-            require(IERC20(erc20).transferFrom(msg.sender, address(this), amount));
-            IChildERC721(erc721).lend(msg.sender, tokenId, duration);
-
+            _openBidding(lender, msg.sender, erc721, tokenId, erc20, amount, duration);
         } else {
             revert("PolyJuice: invalid parameters");
         }
+    }
+
+    function _openBidding(
+        address lender,
+        address borrower,
+        address erc721,
+        uint256 tokenId,
+        address erc20,
+        uint256 amount,
+        uint256 duration
+    ) private {
+        uint256 expiredAt = block.timestamp + duration;
+        bytes32 id_ = keccak256(abi.encodePacked(lender, borrower, erc721, tokenId, erc20, amount, duration));
+
+        _biddings[id_] = Bidding(
+            lender, borrower, erc721, tokenId, erc20, amount, duration, expiredAt, 0, false
+        );
+        emit Fulfilled(id_, lender, borrower, erc721, tokenId, erc20, amount, duration, expiredAt);
+
+        require(IERC20(erc20).transferFrom(borrower, address(this), amount));
+        IChildERC721(erc721).lend(borrower, tokenId, duration);
     }
 
     function settle(bytes32 id_) public returns (uint256) {

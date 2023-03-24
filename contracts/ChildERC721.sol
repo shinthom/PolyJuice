@@ -25,7 +25,7 @@ contract ChildERC721 is ERC721, IChildERC721 {
     mapping(uint256 => uint256) private _expirations; // tokenId => expiration
 
     IPolyJuice private _polyJuice;
-    string private _platform; // todo: manage platforms
+    string private _platform;
 
     constructor(
         string memory name_,
@@ -41,7 +41,7 @@ contract ChildERC721 is ERC721, IChildERC721 {
         _motherERC721 = motherERC721_;
         _polyJuice = IPolyJuice(polyJuice_);
 
-        _polyJuice.createPair(motherERC721_, address(this)); // TODO: emits event
+        _polyJuice.createPair(motherERC721_, address(this));
     }
 
     function transferFrom(
