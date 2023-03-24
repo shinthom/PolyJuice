@@ -1,11 +1,8 @@
-node_modules
+# Foundry
+cache/
+out/
+broadcast/
+
+# env
 .env
-coverage
-coverage.json
-typechain
-typechain-types
-
-# Hardhat files
-cache
-artifacts
-
+.idea
