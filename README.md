@@ -97,76 +97,80 @@ for <b>Multiverse NFTs</b>
 
 </br>
 
-## Architecture
+## 🏛 Architecture
 
-### The relationship between contracts
+The owner of an original NFT never has to move it. Each original collection
+(`MotherERC721`) is paired with one `ChildERC721` per metaverse — a
+non-transferable "utility" token that can only be moved by the protocol. Renting
+transfers the child token, not the original, so the owner only has to prove they
+still hold the mother token.
 
-![alt text](https://s3.us-west-2.amazonaws.com/secure.notion-static.com/daeaa6fb-7b76-4534-92dc-2154d9a09737/Untitled.png?X-Amz-Algorithm=AWS4-HMAC-SHA256&X-Amz-Content-Sha256=UNSIGNED-PAYLOAD&X-Amz-Credential=AKIAT73L2G45EIPT3X45%2F20230305%2Fus-west-2%2Fs3%2Faws4_request&X-Amz-Date=20230305T161231Z&X-Amz-Expires=86400&X-Amz-Signature=2869d183373c3f121fbbfb38e02f0105170ed24197d30212df6f17f7e8e6b41c&X-Amz-SignedHeaders=host&response-content-disposition=filename%3D%22Untitled.png%22&x-id=GetObject)
+```
+   MotherERC721                ChildERC721                 PolyJuice
+   (original NFT)   ── pair ──► (utility token)  ── lend ──►  (core market)
+        ▲                             │  ▲                        │
+        │ ownerOf                     │  └──── settle ────────────┘
+        └── verified on lend / claim ─┘                    escrows ERC20 (e.g. USDC)
+```
+
+### Contracts
+
+| Contract | Responsibility |
+| --- | --- |
+| `PolyJuice.sol` | Core rental market. Pairs a mother collection with a child collection, matches signed listings/offers in `fulfill`, escrows the ERC20 payment, and settles usage-based fees in `settle`. |
+| `ChildERC721.sol` | Non-transferable "utility" token bound to a mother token. Handles `lend` (on rental), `claim` (lender reclaims after expiration), and `repay` (borrower returns early). |
+| `demo/` | `MotherERC721`, `USDC`, and `Faucet` helpers used for local demos and tests. |
 
 ### Listing / Make Offer
 
-![alt text](https://s3.us-west-2.amazonaws.com/secure.notion-static.com/f687ae45-a7da-419d-9b8d-5540d5229939/Untitled.png?X-Amz-Algorithm=AWS4-HMAC-SHA256&X-Amz-Content-Sha256=UNSIGNED-PAYLOAD&X-Amz-Credential=AKIAT73L2G45EIPT3X45%2F20230305%2Fus-west-2%2Fs3%2Faws4_request&X-Amz-Date=20230305T161246Z&X-Amz-Expires=86400&X-Amz-Signature=f250777343170d60373f088ca8f4ad9cc865d18fe7769aa341eb9bce72a7b283&X-Amz-SignedHeaders=host&response-content-disposition=filename%3D%22Untitled.png%22&x-id=GetObject)
+A lender lists a token for rent, or a borrower posts an offer on a token. Either
+side signs the `biddingHash` off-chain; nothing is escrowed until the offer is
+accepted.
 
 ### Rent Now / Accept Offer
 
-![alt text](https://s3.us-west-2.amazonaws.com/secure.notion-static.com/b4911af9-36f8-466a-91c3-9e9f64e12ffc/Untitled.png?X-Amz-Algorithm=AWS4-HMAC-SHA256&X-Amz-Content-Sha256=UNSIGNED-PAYLOAD&X-Amz-Credential=AKIAT73L2G45EIPT3X45%2F20230305%2Fus-west-2%2Fs3%2Faws4_request&X-Amz-Date=20230305T161259Z&X-Amz-Expires=86400&X-Amz-Signature=a565ccf2a8b7092a15e84334fcefb05530775f1b78ff90cf1b9d1ed78096369f&X-Amz-SignedHeaders=host&response-content-disposition=filename%3D%22Untitled.png%22&x-id=GetObject)
+The counterparty calls `fulfill` with the signed order. It verifies the
+signature, pulls the payment into escrow, records the `Bidding`, and lends the
+child token to the borrower for `duration`.
 
-### Claim (after expiration)
+### Claim / Repay (settlement)
 
-![alt text](https://s3.us-west-2.amazonaws.com/secure.notion-static.com/dab278ea-9beb-445c-9dfd-28d135598ccc/Untitled.png?X-Amz-Algorithm=AWS4-HMAC-SHA256&X-Amz-Content-Sha256=UNSIGNED-PAYLOAD&X-Amz-Credential=AKIAT73L2G45EIPT3X45%2F20230305%2Fus-west-2%2Fs3%2Faws4_request&X-Amz-Date=20230305T161316Z&X-Amz-Expires=86400&X-Amz-Signature=ca9ecf89ce740a8eda1e0302d98c22fc0e2cf7873aaf99088050d252c8561be4&X-Amz-SignedHeaders=host&response-content-disposition=filename%3D%22Untitled.png%22&x-id=GetObject)
+- **Repay** — the borrower returns the token before expiration. `settle` prorates
+  the fee by the usage period, pays the lender, and refunds the remainder.
+- **Claim** — after expiration the lender reclaims the token; `settle` pays out
+  the full amount.
 
-## 🚩 How to develop Polyjuice?
+In both cases `ChildERC721` calls `PolyJuice.settle`, which finalizes the fee and
+returns the child token to the origin owner.
 
-### 🌱 Pre-Installation
+## 🚩 How to develop PolyJuice
 
-Before working on Polyjuice locally, you must have ...
-
-- **node**
-- **yarn**
-
-</br>
-
-### 📦 Installation
-
-- Repository for frontend/backend
+The contracts use [Foundry](https://book.getfoundry.sh/). Dependencies are managed as git submodules under `lib/`.
 
 ```shell
-$ git clone https://github.com/polyjuice-denver/polyjuice.org
+git clone https://github.com/shinthom/PolyJuice.git
+cd PolyJuice
+git submodule update --init --recursive
+
+forge build   # compile
+forge test    # run the test suite
 ```
 
-- Repository for contracts
+The frontend/backend live in a separate repository:
 
 ```shell
-$ git clone https://github.com/polyjuice-denver/PolyJuice
+git clone https://github.com/polyjuice-denver/polyjuice.org
 ```
 
-simply clone the repeositories
+### Deployment
 
-</br>
+```shell
+forge script script/Deploy.s.sol \
+  --rpc-url $RPC_URL --broadcast \
+  --sig "run(address,string,string,string)" \
+  <motherERC721> "Child" "cERC721" "sandbox"
+```
 
-### 🔧 Configuration and Backend Setting
-
-- On polyJuice.org repository...
-  - On backend directory
-    - If there is a file named `polyjuice.db` on root directory, delete that file.
-    - run `yarn` to install packages.
-    - run `yarn dev` to run local backend server.
-- On PolyJuice repository...
-  - Change the value of the variable `isDatabaseInitializedForNFTs` to `false` on the file `scripts/deployForDemo.ts`.
-  - run `yarn hardhat run scripts/deployForDemo.ts` to deploy contract and complete setup
-
-</br>
-
-### ✅ COMPLETE
-
-- On polyJuice.org repository...
-  - On frontend directory
-    - run `npm i` to install packages.
-    - run `npm run dev` to run local frontend server.
-
-**Your own local Polyjuice has been created!**
-
-Improvements of code and issues of bugs Reports are always welcome. </br>
-Please contribute in **Polyjuice through the issue page!**
+Improvements of code and bug reports are always welcome through the issue page!
 
 </br>
